@@ -24,6 +24,7 @@ SQLAlchemy
 """
 
 from enum import Enum
+from typing import List
 from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import DeclarativeMeta
 

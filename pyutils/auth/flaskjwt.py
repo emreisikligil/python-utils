@@ -26,29 +26,31 @@ cryptography
 Werkzeug
 """
 
+import logging
+import re
 from dataclasses import dataclass
 from functools import wraps
+from typing import List, Type
+
 import jwt
-import logging
 from flask import request
-from jwt.exceptions import InvalidTokenError, ExpiredSignature
-from werkzeug.exceptions import Unauthorized, InternalServerError
+from werkzeug.exceptions import InternalServerError, Unauthorized
 
 
 @dataclass
 class Claims:
     sub: str
     exp: int
-    iat: int
-    nbf: str
-    iss: str
-    aud: str
-    jti: str
+    iat: int = None
+    nbf: str = None
+    iss: str = None
+    aud: str = None
+    jti: str = None
 
 
 class FlaskJWT:
 
-    def __init__(self, key: str, algorithms: List[str], claims_cls: class = Claims):
+    def __init__(self, key: str, algorithms: List[str], claims_cls: Type[Claims] = Claims):
         """
 
         """
@@ -78,16 +80,16 @@ class FlaskJWT:
             token = request.headers.get("Authorization", "")
             if not token:
                 raise Unauthorized("authorization_required")
-            token = re.sub("Bearer\s*", "", token)
+            token = re.sub(r"Bearer\s*", "", token)
             if not token:
                 raise Unauthorized("missing_token")
             try:
                 jwt_claims = jwt.decode(
                     token, self.key, algorithms=self.algorithms)
                 claims = self.claims_cls(**jwt_claims)
-            except ExpiredSignature:
+            except jwt.ExpiredSignatureError:
                 raise Unauthorized("Expired token")
-            except InvalidTokenError:
+            except jwt.InvalidTokenError:
                 raise Unauthorized("Invalid token")
             except TypeError as e:
                 logging.error(f"Could not parse claims from jwt: {e}")
